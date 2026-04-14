@@ -286,8 +286,11 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
             // Explicitly apply all insets as padding so content is never drawn under system
             // chrome, including AAOS-specific UI areas reported via WindowInsets.
             v.setPadding(systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
-            // Consume system window insets so child views do not attempt to apply them again.
-            return insets.consumeSystemWindowInsets();
+            // Consume insets so child views do not attempt to apply them again.
+            // Use WindowInsetsCompat.CONSUMED on API 30+ (toWindowInsets() is non-null there),
+            // and fall back to consumeSystemWindowInsets() on older API levels.
+            WindowInsets consumed = WindowInsetsCompat.CONSUMED.toWindowInsets();
+            return consumed != null ? consumed : insets.consumeSystemWindowInsets();
         }
     }
 
