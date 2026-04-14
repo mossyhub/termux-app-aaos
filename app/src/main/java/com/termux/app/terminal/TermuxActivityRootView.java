@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.termux.app.TermuxActivity;
@@ -275,9 +276,21 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
     public static class WindowInsetsListener implements View.OnApplyWindowInsetsListener {
         @Override
         public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-            mStatusBarHeight =  WindowInsetsCompat.toWindowInsetsCompat(insets).getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            // Let view window handle insets however it wants
-            return v.onApplyWindowInsets(insets);
+            WindowInsetsCompat insetsCompat = WindowInsetsCompat.toWindowInsetsCompat(insets, v);
+            // Combine system bars and display cutout insets so that AAOS display areas
+            // (reported as display insets) are included alongside the standard status/nav bars.
+            Insets systemInsets = insetsCompat.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            mStatusBarHeight = systemInsets.top;
+            // Explicitly apply all insets as padding so content is never drawn under system
+            // chrome, including AAOS-specific UI areas reported via WindowInsets.
+            v.setPadding(systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
+            // Consume insets so child views do not attempt to apply them again.
+            // Use WindowInsetsCompat.CONSUMED on API 30+ (toWindowInsets() is non-null there),
+            // and fall back to consumeSystemWindowInsets() on older API levels.
+            WindowInsets consumed = WindowInsetsCompat.CONSUMED.toWindowInsets();
+            return consumed != null ? consumed : insets.consumeSystemWindowInsets();
         }
     }
 
