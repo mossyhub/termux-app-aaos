@@ -62,6 +62,7 @@ import com.termux.view.TerminalViewClient;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
 
@@ -215,6 +216,14 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         setContentView(R.layout.activity_termux);
 
+        // On AAOS, translucent system bars are not meaningful and may prevent the system from
+        // reporting accurate display insets. Clear the flags so that WindowInsets correctly
+        // reflects the car's system chrome areas (e.g. the persistent system bar).
+        if (getPackageManager().hasSystemFeature("android.hardware.type.automotive")) {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        }
+
         // Load termux shared preferences
         // This will also fail if TermuxConstants.TERMUX_PACKAGE_NAME does not equal applicationId
         mPreferences = TermuxAppSharedPreferences.build(this, true);
@@ -233,7 +242,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         View content = findViewById(android.R.id.content);
         content.setOnApplyWindowInsetsListener((v, insets) -> {
-            mNavBarHeight = insets.getSystemWindowInsetBottom();
+            mNavBarHeight = WindowInsetsCompat.toWindowInsetsCompat(insets)
+                .getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
             return insets;
         });
 
